@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-red: #dc2626;
+}
+
+/* Additional global styles and tokens can be added here */

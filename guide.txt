@@ -1,0 +1,136 @@
+You are my code generator. Build the **exact UI design** below as a modular Next.js (App Router) + TypeScript + Tailwind project. Keep it tight and specific—no extra libraries, no design drift.
+
+## Tech + Setup (generate the files)
+- Next.js 15 (App Router), **TypeScript**.
+- Tailwind v3 with `@tailwindcss/postcss` plugin (PostCSS). No CSS Modules for design tokens.
+- Use Tailwind default font (system-ui). No custom fonts.
+- Create these files:
+  - `app/layout.tsx` – base HTML + `<body>` wrapper + import of `app/globals.css`.
+  - `app/page.tsx` – **Home** page composed only from the components below.
+  - `components/ui/Card.tsx`
+  - `components/ui/Badge.tsx`
+  - `components/ui/FieldBox.tsx`
+  - `components/ui/InfoRow.tsx`
+  - `components/ThemeToggle.tsx` + `hooks/useTheme.ts` (theme hook).
+  - `components/icons.tsx` – inline SVG set (stroke=2) for: Menu, Bell, Inbox, FileText, User, Edit, Calendar, Message, Link, Claim, Sun, Moon, ChevronRight.
+  - `app/globals.css` – Tailwind base + my variables.
+  - `tailwind.config.js` – add a CSS variable **brand red**.
+
+## Global tokens (mirror these literally)
+In `globals.css` add:
+- `:root { --brand-red: #DC2626; }`
+- Dark mode class strategy on `<html>` (manage via hook below).
+
+## Theme (class tokens, use exactly as named)
+In `useTheme`, return `{ mode, setMode, theme }` where **theme is a map of Tailwind class strings** that flip for light/dark. Use these exact values:
+
+- `pageBg`: dark `bg-[#070b12]` / light `bg-[#F8FAFC]`
+- `pageText`: dark `text-gray-100` / light `text-slate-900`
+- `cardChrome`: dark `border-white/10 bg-white/5 ring-white/10` / light `border-black/10 bg-black/5 ring-black/10`
+- `headerDivider`: dark `border-white/10` / light `border-black/10`
+- `titleText`: dark `text-gray-200` / light `text-slate-900`
+- `label`: dark `text-gray-400` / light `text-slate-600`
+- `value`: dark `text-gray-100` / light `text-slate-900`
+- `box`: dark `bg-black/30 ring-white/10` / light `bg-black/6 ring-black/10`
+- `secondaryText`: dark `text-gray-400` / light `text-slate-700`
+- `muted`: dark `text-gray-500` / light `text-slate-500`
+- `tableHead`: dark `bg-white/10 text-gray-200` / light `bg-black/5 text-slate-700`
+- `zebraEven`: dark `bg-black/20` / light `bg-black/5`
+- `zebraOdd`: dark `bg-black/10` / light `bg-transparent`
+- `rowHover`: dark `hover:bg-white/10` / light `hover:bg-black/6`
+- `ringStrong`: dark `ring-white/15` / light `ring-black/15`
+- `ring`: dark `ring-white/10` / light `ring-black/10`
+- `border`: dark `border-white/10` / light `border-black/10`
+- `sidebar`: dark `bg-white/5 border-white/10` / light `bg-black/5 border-black/10`
+- `topbar`: dark `bg-white/5 border-white/10` / light `bg-black/5 border-black/10`
+- `ghostHover`: dark `hover:bg-white/10` / light `hover:bg-black/10`
+
+Theme behavior:
+- On mount, set `<html class="dark">` when `mode === 'dark'` and persist in `localStorage("theme")`.
+- `ThemeToggle` button:
+  - Base: `rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2 ring-1 ring-white/10`
+  - Dark text/hover: `text-gray-200 hover:bg-white/10`
+  - Light text/hover: `text-slate-700 hover:bg-black/10`
+  - Icon: `Sun` in dark mode (label “Light”), `Moon` in light mode (label “Dark”).
+
+## Components (APIs + exact styling)
+### Card
+Props: `{ title?: string; right?: React.ReactNode; className?: string; themeClass: string; headerDivider: string; titleClass: string; children }`
+- Outer: `rounded-3xl border ring-1 shadow-2xl shadow-black/40 backdrop-blur-xl ${themeClass}`
+- Header (when title/right exists): `flex items-center justify-between gap-3 px-6 py-4 border-b ${headerDivider}`
+- Title text: `text-[13px] font-semibold tracking-wider uppercase ${titleClass}`
+- Body: `p-6`
+
+### Badge
+Props: `{ mode: 'light' | 'dark'; tone?: 'green' | 'slate' | 'red' | 'blue' }`
+- Base: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1`
+- Dot: `h-1.5 w-1.5 rounded-full bg-current opacity-80`
+- Tones:
+  - green: dark `bg-emerald-500/10 text-emerald-300 ring-emerald-400/20` / light `bg-emerald-500/10 text-emerald-700 ring-emerald-400/20`
+  - slate: dark `bg-slate-400/10 text-slate-300 ring-slate-400/20` / light `bg-slate-400/10 text-slate-800 ring-slate-400/20`
+  - red:   dark `bg-red-600/20 text-red-200 ring-red-500/20` / light `bg-red-600/20 text-red-700 ring-red-500/20`
+  - blue:  dark `bg-sky-500/10 text-sky-300 ring-sky-400/20` / light `bg-sky-500/10 text-sky-700 ring-sky-400/20`
+
+### FieldBox
+Props: `{ label: string; value?: React.ReactNode; icon?: React.ReactNode; boxClass: string; labelClass: string; valueClass: string }`
+- Outer: `rounded-xl p-4 ring-1 ${boxClass}`
+- Label: `text-[11px] uppercase tracking-[0.15em] ${labelClass}`
+- Value: `mt-1 text-[15px] font-medium ${valueClass}` (fallback `text-gray-500` “-”)
+
+### InfoRow
+Props: `{ label: string; value?: React.ReactNode; labelClass: string }`
+- Row: `flex items-center justify-between gap-3 py-2.5`
+- Label: `text-[11px] uppercase tracking-[0.15em] ${labelClass}`
+- Value: `text-sm`
+
+## Layout + Spacing (copy exactly)
+- Page wrapper: `relative min-h-screen ${theme.pageText}` with absolute BG `inset-0 -z-10 ${theme.pageBg}`.
+- Grid shell: `grid min-h-screen grid-cols-[220px_1fr]`.
+- Sidebar: `${theme.sidebar} border-r p-4`; brand row `px-2 pb-4 text-sm font-semibold`; nav items `mt-2 space-y-1 text-sm`, each link `block rounded-lg px-3 py-2`, active item `bg-red-700/90 text-white`; others get `${theme.ghostHover}`.
+- Topbar: `sticky top-0 z-10 ${theme.topbar} border-b px-6 py-3 flex items-center justify-between`.
+- Content container: `mx-auto w-full max-w-7xl px-4 py-6`.
+
+## Home page sections (compose from components)
+1) **Notifications (Card)**
+   - `right`: `<span class="text-xs opacity-80">{unread} unread</span>`
+   - Each item li: `rounded-xl p-4 ring-1 transition ${theme.box} ${theme.rowHover}`
+   - Left icon by kind: Case=`FileText`, Message=`Message`, default=`Inbox` (size `h-5 w-5`, `mt-0.5`)
+   - View link color: `style={{ color: 'var(--brand-red)' }}` and use `Icon.Link h-4 w-4`.
+
+2) **Claim Center (Card)**
+   - `right`: `<Badge tone="slate">Requests N</Badge> <Badge tone="blue">Messages M</Badge>`
+   - Tabs container: `mb-4 overflow-hidden rounded-2xl border p-1 text-sm ${theme.cardChrome}`
+   - Tab buttons:
+     - Active: dark `bg-black/40 text-white ring-1 ring-white/10 shadow-inner shadow-black/30` / light `bg-black/10 text-slate-900 ring-1 ring-black/10 shadow-inner`
+     - Inactive: dark `text-gray-300 hover:bg-white/5 hover:text-white` / light `text-slate-600 hover:bg-black/5 hover:text-slate-900`
+   - Request/Message row: `rounded-xl p-4 ring-1 transition ${theme.box} ${theme.rowHover}`
+   - **Claim buttons** (only when unassigned):
+     - Button: `inline-flex items-center gap-2 rounded-lg bg-red-600/20 px-3 py-1.5 text-sm ring-1 ring-red-500/20 transition hover:bg-red-600/30`
+     - Text color: `style={{ color: 'var(--brand-red)' }}`
+     - Icon: `Claim h-4 w-4`
+   - Assigned chip: `<Badge tone="green">Assigned to {name}</Badge>`
+
+3) **Breadcrumbs / Headers (if needed)**
+   - Breadcrumbs: small text with `Icon.ChevronRight h-4 w-4 opacity-60`.
+   - Big avatar tile: `h-16 w-16 rounded-2xl grid place-items-center shadow-lg shadow-black/30 ring-1` and in dark `bg-white/10 ring-white/15`, light `bg-black/10 ring-black/15`.
+
+## Table styling (if you include a table)
+- Wrapper: `overflow-hidden rounded-2xl ring-1 ${theme.ring}`
+- Thead: `${theme.tableHead} sticky top-0 backdrop-blur-sm text-left`
+- Zebra rows: even `${theme.zebraEven}`, odd `${theme.zebraOdd}`, with `${theme.rowHover}` on tr.
+
+## Radii + Shadows (use these consistently)
+- **Cards:** `rounded-3xl`, `shadow-2xl shadow-black/40`, `backdrop-blur-xl`, `ring-1`.
+- **Tiles/avatars:** `rounded-2xl`.
+- **Inputs/Tags/Badges/Buttons:** `rounded-xl` (buttons may use `rounded-lg` where shown).
+- **Small chips:** `rounded-full`.
+
+## Accessibility/UX
+- All interactive elements have focus rings (Tailwind `ring-1` baseline; on focus `focus:ring-2 focus:ring-red-500/40` for text inputs).
+- No SSR hydration mismatches: any `toLocaleString()` happens client-side (components are `use client`).
+
+## What to return
+- The full source code for the files listed above.
+- The Home page should look identical in **dark and light** modes toggled by `ThemeToggle`.
+- Use the exact color classes and spacings above. Do **not** replace with different tokens.
+- Use only Tailwind utility classes (no extra CSS besides variables + Tailwind directives).
