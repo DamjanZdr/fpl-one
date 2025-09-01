@@ -7,3 +7,7 @@
 }
 
 /* Additional global styles and tokens can be added here */
+
+html {
+  background: transparent !important;
+}

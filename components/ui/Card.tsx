@@ -1,7 +1,7 @@
 import React from "react";
 
 interface CardProps {
-  title?: string;
+  title?: string | React.ReactNode;
   right?: React.ReactNode;
   className?: string;
   themeClass: string;
@@ -27,11 +27,9 @@ const Card: React.FC<CardProps> = ({
         className={`flex items-center justify-between gap-3 px-6 py-4 border-b ${headerDivider}`}
       >
         {title && (
-          <span
-            className={`text-[13px] font-semibold tracking-wider uppercase ${titleClass}`}
-          >
-            {title}
-          </span>
+          <div className={`text-[13px] font-semibold tracking-wider uppercase ${titleClass}`}>
+            {typeof title === "string" ? <span>{title}</span> : title}
+          </div>
         )}
         {right}
       </div>

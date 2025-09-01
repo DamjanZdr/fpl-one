@@ -43,12 +43,10 @@ const tickets = [
 
 export default function HomePage() {
   const { theme, mode } = useTheme();
-  const [activeTab, setActiveTab] = useState<"requests" | "messages">(
-    "requests"
-  );
+  const [activeTab, setActiveTab] = useState<"requests" | "messages">("requests");
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-20">
         {/* Notifications Card */}
         <Card
           title="Notifications"
@@ -65,20 +63,12 @@ export default function HomePage() {
               >
                 <div className="flex-shrink-0 mt-0.5">
                   {n.kind === "Case" && <Icons.FileText className="h-5 w-5" />}
-                  {n.kind === "Message" && (
-                    <Icons.Message className="h-5 w-5" />
-                  )}
+                  {n.kind === "Message" && <Icons.Message className="h-5 w-5" />}
                   {n.kind === "Task" && <Icons.Inbox className="h-5 w-5" />}
                 </div>
                 <div className="flex-1">
-                  <div
-                    className={`font-semibold text-base mb-1 ${theme.titleText}`}
-                  >
-                    {n.title}
-                  </div>
-                  <div className={`text-sm ${theme.secondaryText}`}>
-                    {n.subtitle}
-                  </div>
+                  <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>{n.title}</div>
+                  <div className={`text-sm ${theme.secondaryText}`}>{n.subtitle}</div>
                   <a
                     href="#"
                     className={`inline-flex items-center gap-1 text-sm mt-2 ${theme.value}`}
@@ -163,17 +153,11 @@ export default function HomePage() {
                   className={`rounded-xl p-4 ring-1 transition flex items-center justify-between ${theme.box} ${theme.rowHover}`}
                 >
                   <div>
-                    <div
-                      className={`font-semibold text-base mb-1 ${theme.titleText}`}
-                    >
+                    <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>
                       {t.name}
                     </div>
-                    <div className={`text-sm ${theme.secondaryText}`}>
-                      Service: {t.service}
-                    </div>
-                    <div className={`text-xs ${theme.muted}`}>
-                      Submitted: {t.submitted}
-                    </div>
+                    <div className={`text-sm ${theme.secondaryText}`}>Service: {t.service}</div>
+                    <div className={`text-xs ${theme.muted}`}>Submitted: {t.submitted}</div>
                   </div>
                   {t.unclaimed && (
                     <button
@@ -188,9 +172,7 @@ export default function HomePage() {
               ))}
             </ul>
           ) : (
-            <div className="p-6 text-center text-lg text-gray-500">
-              No messages.
-            </div>
+            <div className="p-6 text-center text-lg text-gray-500">No messages.</div>
           )}
         </Card>
       </div>

@@ -14,7 +14,6 @@ export default function ThemeToggle() {
           : "ring-black/10 text-slate-700 hover:bg-black/10"
       }`}
       onClick={() => {
-        console.log("Theme toggle pressed. Current mode:", mode);
         setMode(isDark ? "light" : "dark");
       }}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}

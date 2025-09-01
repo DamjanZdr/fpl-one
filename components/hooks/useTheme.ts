@@ -20,18 +20,26 @@ const themeMap = {
   ringStrong: "ring-black/15 dark:ring-white/15",
   ring: "ring-black/10 dark:ring-white/10",
   border: "border-black/10 dark:border-white/10",
-  sidebar: "bg-black/5 border-black/10 dark:bg-white/5 dark:border-white/10",
-  topbar: "bg-black/5 border-black/10 dark:bg-white/5 dark:border-white/10",
+  sidebar:
+    "border-black/10 bg-black/5 ring-black/10 dark:border-white/10 dark:bg-white/5 dark:ring-white/10",
+  // Removed duplicate topbar key
+  topbar:
+    "border-black/10 bg-black/5 ring-black/10 dark:border-white/10 dark:bg-white/5 dark:ring-white/10",
   ghostHover: "hover:bg-black/10 dark:hover:bg-white/10",
 };
 
 export function useTheme() {
-  const [mode, setModeState] = useState<"light" | "dark">(() => {
+  const [mode, setModeState] = useState<"light" | "dark">("dark");
+
+  // On mount, update mode from localStorage if available
+  useEffect(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as "light" | "dark") || "dark";
+      const stored = localStorage.getItem("theme") as "light" | "dark";
+      if (stored && stored !== mode) {
+        setModeState(stored);
+      }
     }
-    return "dark";
-  });
+  }, []);
 
   const theme = themeMap as Record<string, string>;
 
@@ -43,11 +51,31 @@ export function useTheme() {
         document.documentElement.classList.remove("dark");
       }
       localStorage.setItem("theme", mode);
-      console.log("Theme mode:", mode, "Theme classes:", theme);
+      // Debug: print computed background color and mode for sidebar, CRM/logo row, and top panel
+      setTimeout(() => {
+        const sidebar = document.querySelector("aside");
+        if (sidebar) {
+          const bg = window.getComputedStyle(sidebar).backgroundColor;
+          console.log(`Sidebar [${mode}] computed backgroundColor:`, bg);
+        }
+        const crmRow = sidebar?.querySelector("div.pb-4");
+        if (crmRow) {
+          const bg = window.getComputedStyle(crmRow).backgroundColor;
+          console.log(`CRM/logo row [${mode}] computed backgroundColor:`, bg);
+        }
+        const topbar = document.querySelector("header");
+        if (topbar) {
+          const bg = window.getComputedStyle(topbar).backgroundColor;
+          console.log(`Top panel [${mode}] computed backgroundColor:`, bg);
+        }
+      }, 100);
     }
   }, [mode, theme]);
 
-  const setMode = useCallback((m: "light" | "dark") => setModeState(m), []);
+  const setMode = useCallback((m: "light" | "dark") => {
+    console.log(`Theme toggle button pressed. Changing mode to: ${m}`);
+    setModeState(m);
+  }, []);
 
   return { mode, setMode, theme };
 }
