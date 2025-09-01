@@ -43,139 +43,180 @@ const tickets = [
 
 export default function HomePage() {
   const { theme, mode } = useTheme();
-  const [activeTab, setActiveTab] = useState<"requests" | "messages">("requests");
-  return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-20">
-        {/* Notifications Card */}
-        <Card
-          title="Notifications"
-          right={<span className="text-xs opacity-80">2 unread</span>}
-          themeClass={theme.cardChrome}
-          headerDivider={theme.headerDivider}
-          titleClass={theme.titleText}
-        >
-          <ul className="space-y-4">
-            {notifications.map((n, i) => (
-              <li
-                key={i}
-                className={`rounded-xl p-4 ring-1 transition flex items-center gap-4 ${theme.box} ${theme.rowHover}`}
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {n.kind === "Case" && <Icons.FileText className="h-5 w-5" />}
-                  {n.kind === "Message" && <Icons.Message className="h-5 w-5" />}
-                  {n.kind === "Task" && <Icons.Inbox className="h-5 w-5" />}
-                </div>
-                <div className="flex-1">
-                  <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>{n.title}</div>
-                  <div className={`text-sm ${theme.secondaryText}`}>{n.subtitle}</div>
-                  <a
-                    href="#"
-                    className={`inline-flex items-center gap-1 text-sm mt-2 ${theme.value}`}
-                    style={{ color: "var(--brand-red)" }}
-                  >
-                    <Icons.Link className="h-4 w-4" /> View
-                  </a>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  {n.unread && (
-                    <span
-                      className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
-                      style={{
-                        background: "#F8E6E3",
-                        color: "#AB1604",
-                      }}
-                    >
-                      New
-                    </span>
-                  )}
-                  <button
-                    className={`rounded-lg px-3 py-1.5 text-sm ring-1 transition ${theme.ring} ${theme.ghostHover}`}
-                  >
-                    Mark read
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+  const [activeTab, setActiveTab] = useState<"notifications" | "requests" | "messages">(
+    "notifications"
+  );
 
-        {/* Ticket Center Card */}
-        <Card
-          title="Ticket Center"
-          right={
-            <div className="flex gap-2">
-              <span className="text-xs opacity-80">Requests 2</span>
-              <span className="text-xs opacity-80">Messages 2</span>
-            </div>
-          }
-          themeClass={theme.cardChrome}
-          headerDivider={theme.headerDivider}
-          titleClass={theme.titleText}
-        >
+  const totalUnreadNotifications = notifications.filter((n) => n.unread).length;
+  const totalRequests = tickets.length;
+  const totalMessages = 2; // placeholder for now
+
+  return (
+    <div className="fixed top-20 left-60 right-4 bottom-4">
+      <Card
+        themeClass={theme.cardChrome}
+        headerDivider={theme.headerDivider}
+        titleClass={theme.titleText}
+        className="h-full overflow-hidden [&>div:last-child]:p-0"
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
           <div
-            className={`mb-4 overflow-hidden rounded-2xl border p-1 text-sm ${theme.cardChrome}`}
+            className={`flex items-center justify-between p-4 border-b ${theme.headerDivider} relative`}
           >
-            <button
-              className={`w-1/2 rounded-xl px-4 py-2 font-semibold shadow-inner ${
-                activeTab === "requests"
-                  ? mode === "dark"
-                    ? "bg-black/40 text-white ring-1 ring-white/10"
-                    : "bg-black/10 text-black ring-1 ring-black/10"
-                  : mode === "dark"
-                  ? "text-white hover:bg-white/5 hover:text-white"
-                  : "text-black hover:bg-black/5 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("requests")}
-            >
-              Requests
-            </button>
-            <button
-              className={`w-1/2 rounded-xl px-4 py-2 font-semibold ${
-                activeTab === "messages"
-                  ? mode === "dark"
-                    ? "bg-black/40 text-white ring-1 ring-white/10"
-                    : "bg-black/10 text-black ring-1 ring-black/10"
-                  : mode === "dark"
-                  ? "text-white hover:bg-white/5 hover:text-white"
-                  : "text-black hover:bg-black/5 hover:text-black"
-              }`}
-              onClick={() => setActiveTab("messages")}
-            >
-              Messages
-            </button>
+            <div className="flex items-center gap-3">
+              <span
+                className={`text-[13px] font-semibold tracking-wider uppercase ${theme.titleText}`}
+              >
+                Dashboard
+              </span>
+              {totalUnreadNotifications > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                  {totalUnreadNotifications}
+                </span>
+              )}
+            </div>
+            <div className={`absolute bottom-0 left-0 right-0 h-px bg-slate-700`} />
           </div>
-          {activeTab === "requests" ? (
-            <ul className="space-y-4">
-              {tickets.map((t, i) => (
-                <li
-                  key={i}
-                  className={`rounded-xl p-4 ring-1 transition flex items-center justify-between ${theme.box} ${theme.rowHover}`}
-                >
-                  <div>
-                    <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>
-                      {t.name}
+
+          {/* Tab Navigation */}
+          <div className="p-4 border-b border-slate-700">
+            <div className={`overflow-hidden rounded-2xl border p-1 text-sm ${theme.cardChrome}`}>
+              <button
+                className={`w-1/3 rounded-xl px-4 py-2 font-semibold shadow-inner ${
+                  activeTab === "notifications"
+                    ? mode === "dark"
+                      ? "bg-black/40 text-white ring-1 ring-white/10"
+                      : "bg-black/10 text-black ring-1 ring-black/10"
+                    : mode === "dark"
+                    ? "text-white hover:bg-white/5 hover:text-white"
+                    : "text-black hover:bg-black/5 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("notifications")}
+              >
+                Notifications
+              </button>
+              <button
+                className={`w-1/3 rounded-xl px-4 py-2 font-semibold ${
+                  activeTab === "requests"
+                    ? mode === "dark"
+                      ? "bg-black/40 text-white ring-1 ring-white/10"
+                      : "bg-black/10 text-black ring-1 ring-black/10"
+                    : mode === "dark"
+                    ? "text-white hover:bg-white/5 hover:text-white"
+                    : "text-black hover:bg-black/5 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("requests")}
+              >
+                Requests
+              </button>
+              <button
+                className={`w-1/3 rounded-xl px-4 py-2 font-semibold ${
+                  activeTab === "messages"
+                    ? mode === "dark"
+                      ? "bg-black/40 text-white ring-1 ring-white/10"
+                      : "bg-black/10 text-black ring-1 ring-black/10"
+                    : mode === "dark"
+                    ? "text-white hover:bg-white/5 hover:text-white"
+                    : "text-black hover:bg-black/5 hover:text-black"
+                }`}
+                onClick={() => setActiveTab("messages")}
+              >
+                Messages
+              </button>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div
+            className="flex-1 overflow-y-scroll p-4"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#64748b #1e293b",
+            }}
+          >
+            {activeTab === "notifications" && (
+              <ul className="space-y-4">
+                {notifications.map((n, i) => (
+                  <li
+                    key={i}
+                    className={`rounded-xl p-4 ring-1 transition flex items-center gap-4 ${theme.box} ${theme.rowHover}`}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      {n.kind === "Case" && <Icons.FileText className="h-5 w-5" />}
+                      {n.kind === "Message" && <Icons.Message className="h-5 w-5" />}
+                      {n.kind === "Task" && <Icons.Inbox className="h-5 w-5" />}
                     </div>
-                    <div className={`text-sm ${theme.secondaryText}`}>Service: {t.service}</div>
-                    <div className={`text-xs ${theme.muted}`}>Submitted: {t.submitted}</div>
-                  </div>
-                  {t.unclaimed && (
-                    <button
-                      className={`inline-flex rounded-lg px-3 py-1.5 text-sm font-semibold border border-[#AB1604] bg-[#AB1604] transition hover:bg-[#8C1202] ${
-                        mode === "light" ? "text-black" : "text-white"
-                      }`}
-                    >
-                      Claim
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="p-6 text-center text-lg text-gray-500">No messages.</div>
-          )}
-        </Card>
-      </div>
-    </>
+                    <div className="flex-1">
+                      <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>
+                        {n.title}
+                      </div>
+                      <div className={`text-sm ${theme.secondaryText}`}>{n.subtitle}</div>
+                      <a
+                        href="#"
+                        className={`inline-flex items-center gap-1 text-sm mt-2 ${theme.value}`}
+                        style={{ color: "var(--brand-red)" }}
+                      >
+                        <Icons.Link className="h-4 w-4" /> View
+                      </a>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {n.unread && (
+                        <span
+                          className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+                          style={{
+                            background: "#F8E6E3",
+                            color: "#AB1604",
+                          }}
+                        >
+                          New
+                        </span>
+                      )}
+                      <button
+                        className={`rounded-lg px-3 py-1.5 text-sm ring-1 transition ${theme.ring} ${theme.ghostHover}`}
+                      >
+                        Mark read
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {activeTab === "requests" && (
+              <ul className="space-y-4">
+                {tickets.map((t, i) => (
+                  <li
+                    key={i}
+                    className={`rounded-xl p-4 ring-1 transition flex items-center justify-between ${theme.box} ${theme.rowHover}`}
+                  >
+                    <div>
+                      <div className={`font-semibold text-base mb-1 ${theme.titleText}`}>
+                        {t.name}
+                      </div>
+                      <div className={`text-sm ${theme.secondaryText}`}>Service: {t.service}</div>
+                      <div className={`text-xs ${theme.muted}`}>Submitted: {t.submitted}</div>
+                    </div>
+                    {t.unclaimed && (
+                      <button
+                        className={`inline-flex rounded-lg px-3 py-1.5 text-sm font-semibold border border-[#AB1604] bg-[#AB1604] transition hover:bg-[#8C1202] ${
+                          mode === "light" ? "text-black" : "text-white"
+                        }`}
+                      >
+                        Claim
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {activeTab === "messages" && (
+              <div className="p-6 text-center text-lg text-gray-500">No messages.</div>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }

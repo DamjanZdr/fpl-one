@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "./hooks/useTheme";
 import ThemeToggle from "./ThemeToggle";
 import * as Icons from "./icons";
+import { threads } from "../dummy-data/inbox";
 import React, { useState, useEffect, useMemo } from "react";
 
 export default function AppShell2({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,10 @@ export default function AppShell2({ children }: { children: React.ReactNode }) {
   const HD_HEIGHT = "64px";
 
   const sbWidth = useMemo(() => (collapsed ? SB_COLLAPSED : SB_EXPANDED), [collapsed]);
+  const totalUnread = useMemo(
+    () => threads.reduce((sum, thread) => sum + thread.unreadCount, 0),
+    []
+  );
 
   useEffect(() => {
     const sidebar = document.querySelector("aside");
@@ -104,7 +109,14 @@ export default function AppShell2({ children }: { children: React.ReactNode }) {
             }`}
             style={{ transition: "padding-left 200ms ease" }}
           >
-            <Icons.Inbox className="h-7 w-7 opacity-90" />
+            <div className="relative">
+              <Icons.Inbox className="h-7 w-7 opacity-90" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                  {totalUnread}
+                </span>
+              )}
+            </div>
             {!collapsed && <span className="text-xl font-bold">Inbox</span>}
           </Link>
 
