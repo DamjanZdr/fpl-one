@@ -396,7 +396,15 @@ export default function TasksPage() {
         <div className={`border-b ${theme.headerDivider}`}></div>
 
         {/* Bottom Panel - Content Row */}
-        <div className="flex flex-1 overflow-hidden">
+        <div
+          className="flex flex-1 overflow-hidden"
+          onClick={(e) => {
+            // Close task panel when clicking outside of it
+            if (selectedTask && !(e.target as Element)?.closest?.(".task-detail-panel")) {
+              setSelectedTask(null);
+            }
+          }}
+        >
           {/* Left Panel - Task Lists */}
           <div className="w-80 flex-shrink-0 border-r border-slate-700">
             <TaskListPanel
@@ -414,7 +422,7 @@ export default function TasksPage() {
           </div>
 
           {/* Main Content - Task Board with proper overflow */}
-          <div className="flex-1 h-full overflow-hidden">
+          <div className={`flex-1 h-full overflow-hidden ${selectedTask ? "pr-96" : ""}`}>
             {selectedList ? (
               <TaskBoard
                 selectedList={selectedList}
@@ -444,16 +452,20 @@ export default function TasksPage() {
               </div>
             )}
           </div>
+
+          {/* Right Panel - Task Detail */}
+          {selectedTask && (
+            <div className="w-96 flex-shrink-0 border-l border-slate-700 absolute right-0 top-0 h-full bg-slate-900 task-detail-panel">
+              <TaskDetailPanel
+                task={selectedTask}
+                onClose={() => setSelectedTask(null)}
+                onUpdateTask={handleUpdateTask}
+                selectedList={selectedList}
+              />
+            </div>
+          )}
         </div>
       </Card>
-
-      {/* Task Detail Modal */}
-      <TaskDetailPanel
-        task={selectedTask}
-        isVisible={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
-        onUpdateTask={handleUpdateTask}
-      />
     </div>
   );
 }

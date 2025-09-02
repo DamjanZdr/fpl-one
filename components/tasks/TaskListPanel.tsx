@@ -156,9 +156,6 @@ export default function TaskListPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 text-center">
-        <h2 className="text-red-500 font-bold">TESTING - TaskListPanel is working!</h2>
-      </div>
       {/* Task Lists */}
       <div
         className="flex-1 overflow-y-scroll p-4 space-y-2"
