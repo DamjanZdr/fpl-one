@@ -1,0 +1,597 @@
+"use client";
+import React, { useState } from "react";
+import { TaskList, Task, TaskStage, taskMembers } from "../../dummy-data/tasks";
+import { useTheme } from "../hooks/useTheme";
+
+interface TaskBoardProps {
+  selectedList: TaskList | null;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onMoveTask: (taskId: string, targetStageId: string, position: number) => void;
+  onCreateTask: (task: Omit<Task, "id" | "createdAt">) => void;
+  onDeleteTask: (taskId: string) => void;
+  onUpdateStages: (stages: TaskStage[]) => void;
+  onCreateStage: (name: string) => void;
+  onDeleteStage: (stageId: string) => void;
+  onRenameStage: (stageId: string, newName: string) => void;
+  onReorderStages: (draggedStageId: string, targetIndex: number) => void;
+  onToggleShare: (listId: string) => void;
+  onTaskClick: (task: Task) => void;
+}
+
+export default function TaskBoard({
+  selectedList,
+  onUpdateTask,
+  onMoveTask,
+  onCreateTask,
+  onDeleteTask,
+  onUpdateStages,
+  onCreateStage,
+  onDeleteStage,
+  onRenameStage,
+  onReorderStages,
+  onToggleShare,
+  onTaskClick,
+}: TaskBoardProps) {
+  const { theme } = useTheme();
+  const [newTaskStage, setNewTaskStage] = useState<string>("");
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dropIndicator, setDropIndicator] = useState<{
+    stageId: string;
+    position: number;
+  } | null>(null);
+
+  // Stage management state
+  const [draggedStage, setDraggedStage] = useState<TaskStage | null>(null);
+  const [dragOverStageIndex, setDragOverStageIndex] = useState<number | null>(null);
+  const [stageDropdowns, setStageDropdowns] = useState<string | null>(null);
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [editStageName, setEditStageName] = useState("");
+  const [addingStage, setAddingStage] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
+
+  if (!selectedList) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-500">
+        <div className="text-center">
+          <p>Select a task list to view tasks</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreateTask = () => {
+    if (newTaskTitle.trim() && newTaskStage) {
+      onCreateTask({
+        title: newTaskTitle.trim(),
+        description: "",
+        dueDate: null,
+        stage: newTaskStage,
+        responsiblePeople: ["user-1"],
+        attachments: [],
+      });
+      setNewTaskTitle("");
+      setNewTaskStage("");
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
+    setDraggedTask(task);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", task.id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverStage(null);
+    setDropIndicator(null);
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent, stageId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverStage(stageId);
+
+    // Calculate drop position based on mouse Y coordinate
+    const container = e.currentTarget as HTMLElement;
+    const rect = container.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+
+    // Get all task elements in this stage (excluding the dragged one)
+    const taskElements = Array.from(container.querySelectorAll("[data-task-id]")) as HTMLElement[];
+    const tasks = getTasksByStage(stageId).filter((t) => t.id !== draggedTask?.id);
+
+    let dropPosition = tasks.length; // Default to end
+
+    for (let i = 0; i < taskElements.length; i++) {
+      const taskElement = taskElements[i];
+      const taskId = taskElement.getAttribute("data-task-id");
+
+      // Skip if this is the dragged task
+      if (taskId === draggedTask?.id) continue;
+
+      const taskRect = taskElement.getBoundingClientRect();
+      const taskY = taskRect.top - rect.top;
+      const taskHeight = taskRect.height;
+
+      // If mouse is in the top half of this task, insert before it
+      if (mouseY < taskY + taskHeight / 2) {
+        dropPosition = tasks.findIndex((t) => t.id === taskId);
+        break;
+      }
+    }
+
+    setDropIndicator({ stageId, position: dropPosition });
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverStage(null);
+      setDropIndicator(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, stageId: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+
+    if (draggedTask && dropIndicator) {
+      onMoveTask(draggedTask.id, stageId, dropIndicator.position);
+    }
+
+    setDraggedTask(null);
+    setDropIndicator(null);
+  };
+
+  const formatDueDate = (date: Date | null) => {
+    if (!date) return "No due date";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+    });
+  };
+
+  const getTasksByStage = (stageId: string) => {
+    return selectedList.tasks.filter((task) => task.stage === stageId);
+  };
+
+  // Stage Management Functions
+  const handleStageDragStart = (e: React.DragEvent, stage: TaskStage) => {
+    setDraggedStage(stage);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", stage.id);
+  };
+
+  const handleStageDragEnd = () => {
+    setDraggedStage(null);
+    setDragOverStageIndex(null);
+  };
+
+  const handleStageDragOver = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedStage) {
+      setDragOverStageIndex(targetIndex);
+    }
+  };
+
+  const handleStageDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedStage) {
+      onReorderStages(draggedStage.id, targetIndex);
+    }
+    setDraggedStage(null);
+    setDragOverStageIndex(null);
+  };
+
+  const startStageRename = (stage: TaskStage) => {
+    setEditingStage(stage.id);
+    setEditStageName(stage.name);
+    setStageDropdowns(null);
+  };
+
+  const confirmStageRename = () => {
+    if (editingStage && editStageName.trim()) {
+      onRenameStage(editingStage, editStageName.trim());
+    }
+    setEditingStage(null);
+    setEditStageName("");
+  };
+
+  const cancelStageRename = () => {
+    setEditingStage(null);
+    setEditStageName("");
+  };
+
+  const handleCreateStage = () => {
+    if (newStageName.trim()) {
+      onCreateStage(newStageName.trim());
+      setNewStageName("");
+      setAddingStage(false);
+    }
+  };
+
+  const cancelCreateStage = () => {
+    setNewStageName("");
+    setAddingStage(false);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Shared Info */}
+      {selectedList.isShared && (
+        <div className="p-4 pb-0">
+          <div className="mb-3">
+            <p className="text-xs text-gray-400 mb-1">Shared with:</p>
+            <div className="flex gap-1 flex-wrap">
+              {selectedList.sharedWith.map((userId) => {
+                const member = taskMembers.find((m) => m.id === userId);
+                return member ? (
+                  <span
+                    key={userId}
+                    className="text-xs bg-slate-700 text-white px-2 py-0.5 rounded"
+                  >
+                    {member.avatar} {member.name}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Task Board */}
+      <div
+        className="flex-1 overflow-x-auto overflow-y-hidden p-4"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "#64748b #1e293b",
+        }}
+      >
+        <div className="flex gap-4 h-full min-w-max">
+          {selectedList.stages.map((stage, index) => (
+            <React.Fragment key={stage.id}>
+              {/* Dynamic Ghost Space Before Stage */}
+                {draggedStage && (
+                  <div
+                    className={
+                      "transition-all duration-200 ease-out flex items-center justify-center " +
+                      (dragOverStageIndex === index ? "w-72 opacity-100" : "w-2 opacity-50")
+                    }
+                    onDragOver={(e) => handleStageDragOver(e, index)}
+                    onDrop={(e) => handleStageDrop(e, index)}
+                  >
+                    {dragOverStageIndex === index && (
+                      <div className="w-full h-32 border-2 border-dashed border-blue-500 rounded-xl bg-blue-500/5 flex items-center justify-center">
+                        <div className="text-blue-400 text-sm font-medium">Drop stage here</div>
+                      </div>
+                    )}
+                    {dragOverStageIndex !== index && (
+                      <div className="w-0.5 h-32 bg-blue-500/50 rounded-full" />
+                    )}
+                  </div>
+                )}
+
+                <div
+                  className={
+                    "w-72 flex flex-col transition-all duration-200 " +
+                    (draggedStage?.id === stage.id ? "opacity-40 scale-95" : "")
+                  }
+                  data-stage-id={stage.id}
+                >
+                  {/* Stage Header */}
+                  <div
+                    draggable={editingStage !== stage.id}
+                    onDragStart={(e) => handleStageDragStart(e, stage)}
+                    onDragEnd={handleStageDragEnd}
+                    className={
+                      "p-3 rounded-t-xl border-l-4 bg-slate-800 transition-colors cursor-move " +
+                      (dragOverStage === stage.id ? "bg-slate-700" : "") +
+                      " " +
+                      (draggedStage?.id === stage.id ? "opacity-50" : "") +
+                      " border-slate-600 relative group"
+                    }
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        {editingStage === stage.id ? (
+                          <input
+                            type="text"
+                            value={editStageName}
+                            onChange={(e) => setEditStageName(e.target.value)}
+                            onBlur={cancelStageRename}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                confirmStageRename();
+                              } else if (e.key === "Escape") {
+                                cancelStageRename();
+                              }
+                            }}
+                            className="w-full px-2 py-1 text-sm font-semibold bg-slate-700 text-white border border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <h3 className="font-semibold text-sm text-white">{stage.name}</h3>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          {getTasksByStage(stage.id).length} tasks
+                        </p>
+                      </div>
+
+                      {/* 3-dot menu */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStageDropdowns(stageDropdowns === stage.id ? null : stage.id);
+                          }}
+                          className="p-1 rounded hover:bg-slate-700 text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <circle cx="8" cy="3" r="1.5" />
+                            <circle cx="8" cy="8" r="1.5" />
+                            <circle cx="8" cy="13" r="1.5" />
+                          </svg>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {stageDropdowns === stage.id && (
+                          <div className="absolute right-0 top-8 bg-slate-800 border border-slate-600 rounded-lg shadow-lg py-1 z-20 min-w-32">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startStageRename(stage);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-white hover:bg-slate-700 transition-colors flex items-center gap-2"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                              </svg>
+                              Rename
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteStage(stage.id);
+                                setStageDropdowns(null);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                              </svg>
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tasks Container */}
+                  <div
+                    className={
+                      "flex-1 bg-slate-800/50 rounded-b-xl p-3 overflow-y-auto border border-slate-700 border-t-0 transition-all duration-200 " +
+                      (dragOverStage === stage.id && draggedTask?.stage !== stage.id
+                        ? "bg-blue-500/10 border-blue-500/50 shadow-lg"
+                        : "")
+                    }
+                    style={{
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "#64748b #1e293b",
+                      minHeight: "300px",
+                    }}
+                    onDragOver={(e) => handleDragOver(e, stage.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, stage.id)}
+                  >
+                    <div className="space-y-2">
+                      {getTasksByStage(stage.id).map((task, index) => (
+                        <div key={task.id}>
+                          {/* Drop Indicator Above */}
+                          {draggedTask &&
+                            dropIndicator?.stageId === stage.id &&
+                            dropIndicator.position === index &&
+                            draggedTask.id !== task.id && (
+                              <div className="h-0.5 bg-blue-500 rounded-full mx-2 mb-2 animate-pulse shadow-md" />
+                            )}
+
+                          {/* Task Card */}
+                          <div
+                            data-task-id={task.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => {
+                              if (!isDragging) {
+                                onTaskClick(task);
+                              }
+                            }}
+                            className={
+                              "group bg-slate-900 border border-slate-600 rounded-xl p-3 cursor-grab hover:border-slate-500 transition-all select-none " +
+                              (draggedTask?.id === task.id
+                                ? "opacity-50 rotate-1 shadow-lg"
+                                : "hover:shadow-md hover:scale-[1.02]") +
+                              " active:cursor-grabbing"
+                            }
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium text-sm text-white flex-1">
+                                {task.title}
+                              </h4>
+                              <div className="text-gray-500 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                ⋮⋮
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1">
+                                {task.responsiblePeople.map((userId) => {
+                                  const member = taskMembers.find((m) => m.id === userId);
+                                  return member ? (
+                                    <span key={userId} className="text-xs" title={member.name}>
+                                      {member.avatar}
+                                    </span>
+                                  ) : null;
+                                })}
+                              </div>
+
+                              <div className="text-right">
+                                <p
+                                  className={
+                                    "text-xs " +
+                                    (task.dueDate && task.dueDate < new Date()
+                                      ? "text-red-400"
+                                      : "text-gray-400")
+                                  }
+                                >
+                                  {formatDueDate(task.dueDate)}
+                                </p>
+                                {task.attachments.length > 0 && (
+                                  <p className="text-xs text-blue-400">
+                                    📎 {task.attachments.length}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Drop Indicator at End */}
+                      {draggedTask &&
+                        dropIndicator?.stageId === stage.id &&
+                        dropIndicator.position === getTasksByStage(stage.id).length && (
+                          <div className="h-0.5 bg-blue-500 rounded-full mx-2 mt-2 animate-pulse shadow-md" />
+                        )}
+                    </div>
+
+                    {/* Add Task Form */}
+                    {newTaskStage === stage.id ? (
+                      <div className="bg-slate-900 border border-blue-500 rounded-xl p-3 mt-2">
+                        <input
+                          type="text"
+                          placeholder="Task title..."
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          onKeyPress={(e) => e.key === "Enter" && handleCreateTask()}
+                          className="w-full bg-transparent border-none outline-none text-sm text-white mb-2"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleCreateTask}
+                            disabled={!newTaskTitle.trim()}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded text-xs"
+                          >
+                            Add
+                          </button>
+                          <button
+                            onClick={() => {
+                              setNewTaskStage("");
+                              setNewTaskTitle("");
+                            }}
+                            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setNewTaskStage(stage.id)}
+                        className="w-full p-3 border border-dashed border-gray-600 rounded-xl text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors text-sm mt-2"
+                      >
+                        + Add task
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+
+            {/* Final Drop Zone After All Stages */}
+            {draggedStage && (
+              <div
+                className={
+                  "transition-all duration-200 ease-out flex items-center justify-center " +
+                  (dragOverStageIndex === selectedList.stages.length
+                    ? "w-72 opacity-100"
+                    : "w-2 opacity-50")
+                }
+                onDragOver={(e) => handleStageDragOver(e, selectedList.stages.length)}
+                onDrop={(e) => handleStageDrop(e, selectedList.stages.length)}
+              >
+                {dragOverStageIndex === selectedList.stages.length && (
+                  <div className="w-full h-32 border-2 border-dashed border-blue-500 rounded-xl bg-blue-500/5 flex items-center justify-center">
+                    <div className="text-blue-400 text-sm font-medium">Drop stage here</div>
+                  </div>
+                )}
+                {dragOverStageIndex !== selectedList.stages.length && (
+                  <div className="w-0.5 h-32 bg-blue-500/50 rounded-full" />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Add Stage Button/Form */}
+          <div className="w-72 flex flex-col">
+            {addingStage ? (
+              <div className="p-3 bg-slate-800 border border-blue-500 rounded-xl">
+                <input
+                  type="text"
+                  placeholder="Stage name..."
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateStage();
+                    } else if (e.key === "Escape") {
+                      cancelCreateStage();
+                    }
+                  }}
+                  className="w-full px-2 py-1 text-sm bg-slate-700 text-white border border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  autoFocus
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={handleCreateStage}
+                    disabled={!newStageName.trim()}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded text-xs"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={cancelCreateStage}
+                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAddingStage(true)}
+                className="p-3 border border-dashed border-gray-600 rounded-xl text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors text-sm"
+              >
+                + Add Stage
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
