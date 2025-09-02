@@ -325,6 +325,70 @@ export default function TaskBoard({
                       onDragOver={(e) => handleDragOver(e, stage.id)}
                       onDrop={(e) => handleDrop(e, stage.id)}
                     >
+                      {/* Add task form/button - moved to top */}
+                      {newTaskStage === stage.id ? (
+                        <div className="p-3 bg-slate-700 border border-blue-500 rounded-lg">
+                          <input
+                            type="text"
+                            placeholder="Task title..."
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleCreateTask();
+                              } else if (e.key === "Escape") {
+                                setNewTaskStage("");
+                                setNewTaskTitle("");
+                              }
+                            }}
+                            className="w-full px-2 py-1 text-sm bg-slate-600 text-white border border-slate-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleCreateTask}
+                              disabled={!newTaskTitle.trim()}
+                              className="flex-1 py-2 rounded text-white text-sm transition-colors"
+                              style={{ backgroundColor: "#AB1604" }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#8B1203")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = "#AB1604")
+                              }
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => {
+                                setNewTaskStage("");
+                                setNewTaskTitle("");
+                              }}
+                              className={
+                                "flex-1 py-2 rounded border " +
+                                theme.border +
+                                " " +
+                                theme.pageText +
+                                " hover:bg-white/5 text-sm"
+                              }
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setNewTaskStage(stage.id)}
+                          className={
+                            "w-full p-3 text-left rounded-lg border border-dashed border-slate-600 hover:border-slate-500 hover:bg-white/5 transition-colors text-sm " +
+                            theme.pageText
+                          }
+                        >
+                          + Add task
+                        </button>
+                      )}
+
                       {stageTasks.map((task, taskIndex) => {
                         const isDraggedTask = draggedTask?.id === task.id;
                         const showDropIndicator =
@@ -342,7 +406,7 @@ export default function TaskBoard({
                             <div
                               data-task-id={task.id}
                               className={
-                                "p-3 rounded-lg border transition-all cursor-move " +
+                                "p-3 rounded-lg border transition-all cursor-move relative group " +
                                 (isDraggedTask
                                   ? "opacity-50 scale-95 border-blue-500"
                                   : "border-slate-600 bg-slate-700 hover:border-slate-500")
@@ -352,16 +416,33 @@ export default function TaskBoard({
                               onDragEnd={handleDragEnd}
                               onClick={() => onTaskClick(task)}
                             >
-                              <h4 className={"font-medium text-sm mb-2 " + theme.pageText}>
+                              {/* Delete button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteTask(task.id);
+                                }}
+                                className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded opacity-0 group-hover:opacity-100 transition-all"
+                                title="Delete task"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                </svg>
+                              </button>
+
+                              <h4 className={"font-medium text-sm mb-2 pr-6 " + theme.pageText}>
                                 {task.title}
                               </h4>
-                              {task.description && (
-                                <p className="text-xs text-gray-400 mb-3">{task.description}</p>
-                              )}
+                              {/* Fixed height description area - always 2 lines */}
+                              <div className="h-8 mb-3">
+                                <p className="text-xs text-gray-400 line-clamp-2">
+                                  {task.description || ""}
+                                </p>
+                              </div>
                               <div className="flex items-center justify-between">
                                 <div className="flex gap-1">
                                   {task.dueDate && (
-                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs">
+                                    <span className="bg-slate-600 text-gray-300 px-2 py-0.5 rounded text-xs">
                                       {new Date(task.dueDate).toISOString().split("T")[0]}
                                     </span>
                                   )}
@@ -398,54 +479,6 @@ export default function TaskBoard({
                         dropIndicator?.position === stageTasks.length && (
                           <div className="h-3 bg-blue-500/20 border border-blue-500 border-dashed rounded"></div>
                         )}
-
-                      {/* Add task form/button */}
-                      {newTaskStage === stage.id ? (
-                        <div className="p-3 bg-slate-700 border border-blue-500 rounded-lg">
-                          <input
-                            type="text"
-                            placeholder="Task title..."
-                            value={newTaskTitle}
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleCreateTask();
-                              } else if (e.key === "Escape") {
-                                setNewTaskStage("");
-                                setNewTaskTitle("");
-                              }
-                            }}
-                            className="w-full px-2 py-1 text-sm bg-slate-600 text-white border border-slate-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
-                            autoFocus
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={handleCreateTask}
-                              disabled={!newTaskTitle.trim()}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded text-xs"
-                            >
-                              Add
-                            </button>
-                            <button
-                              onClick={() => {
-                                setNewTaskStage("");
-                                setNewTaskTitle("");
-                              }}
-                              className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setNewTaskStage(stage.id)}
-                          className="w-full p-3 border border-dashed border-gray-600 rounded-xl text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors text-sm mt-2"
-                        >
-                          + Add task
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

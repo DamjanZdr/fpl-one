@@ -65,6 +65,7 @@ export default function TaskListPanel({
   };
 
   const handleRename = (listId: string) => {
+    console.log("handleRename called with:", listId, editName);
     if (editName.trim().length >= 1) {
       onRenameList(listId, editName.trim());
       setEditingList(null);
@@ -76,18 +77,21 @@ export default function TaskListPanel({
   };
 
   const handleCancelEdit = () => {
+    console.log("handleCancelEdit called");
     setEditingList(null);
     setEditName("");
     setEditError("");
   };
 
   const startRename = (list: TaskList) => {
+    console.log("startRename called for list:", list.id, list.name);
     setEditingList(list.id);
     setEditName(list.name);
     setEditError("");
   };
 
   const confirmDelete = (listId: string) => {
+    console.log("confirmDelete called for list:", listId);
     onDeleteList(listId);
     setDeletingList(null);
     setOpenDropdown(null);
@@ -122,14 +126,15 @@ export default function TaskListPanel({
     setSelectedUsers([]);
   };
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      // Handle click away for dropdowns
+      // Handle dropdown clicks
       if (openDropdown && dropdownRef.current && !dropdownRef.current.contains(target)) {
         setOpenDropdown(null);
-        setDeletingList(null);
+        setDeletingList(null); // Reset delete confirmation when closing dropdown
       }
 
       // Handle click away for add list form
@@ -151,6 +156,9 @@ export default function TaskListPanel({
 
   return (
     <div className="flex flex-col h-full">
+      <div className="p-4 text-center">
+        <h2 className="text-red-500 font-bold">TESTING - TaskListPanel is working!</h2>
+      </div>
       {/* Task Lists */}
       <div
         className="flex-1 overflow-y-scroll p-4 space-y-2"
@@ -250,7 +258,7 @@ export default function TaskListPanel({
               ) : (
                 <>
                   <div className="flex-1">
-                    <h3 className={"font-medium text-sm mb-1 " + theme.pageText}>{list.name}</h3>
+                    <h3 className="font-medium text-sm mb-1">{list.name}</h3>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
                       <span>{list.tasks.length} tasks</span>
                       {list.isShared && (
@@ -258,8 +266,7 @@ export default function TaskListPanel({
                       )}
                     </div>
                   </div>
-
-                  <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -282,12 +289,18 @@ export default function TaskListPanel({
                       </svg>
                     </button>
 
+                    {/* Dropdown Menu */}
                     {openDropdown === list.id && (
-                      <div className="absolute right-0 top-8 bg-slate-800 border border-slate-600 rounded-lg shadow-lg py-1 z-10 min-w-32">
+                      <div
+                        ref={dropdownRef}
+                        className="absolute right-0 top-8 bg-slate-800 border border-slate-600 rounded-lg shadow-lg py-1 z-10 min-w-40"
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            console.log("Rename clicked for list:", list.id);
                             startRename(list);
+                            setOpenDropdown(null);
                           }}
                           className={
                             "w-full text-left px-3 py-2 text-xs " +
@@ -312,7 +325,7 @@ export default function TaskListPanel({
                           }
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.22 2.92 2.8 2.99 1.6.07 2.99-1.23 2.99-2.83z" />
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.50-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" />
                           </svg>
                           Share
                         </button>
@@ -354,6 +367,7 @@ export default function TaskListPanel({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log("Delete clicked for list:", list.id);
                               setDeletingList(list.id);
                             }}
                             className={
@@ -377,7 +391,6 @@ export default function TaskListPanel({
           </div>
         ))}
 
-        {/* Empty state */}
         {filteredLists.length === 0 && (
           <div className="text-center text-gray-500 mt-8">
             {activeTab === "personal" ? (
